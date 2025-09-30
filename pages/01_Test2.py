@@ -26,30 +26,37 @@ def crawl_news_articles(rss_url, max_articles=20):
     - rss_url: RSS 피드 URL
     - max_articles: 최대 기사 수
     """
-    feed = feedparser.parse(rss_url)
-    
-    if feed.bozo_exception:
-        st.error(f"RSS 파싱 오류: {feed.bozo_exception}")
-        return []
-    
-    articles = []
-    for entry in feed.entries[:max_articles]:
-        article = {
-            'title': entry.get('title', ''),
-            'link': entry.get('link', ''),
-            'published': entry.get('published', ''),
-            'summary': entry.get('summary', ''),
-            'source': entry.get('source', {}).get('title', '') if 'source' in entry else '',
-            'media_url': entry.get('media_content', [{}])[0].get('url', '') if 'media_content' in entry else ''
-        }
-        try:
-            article['published_date'] = datetime.datetime.strptime(entry.published, '%a, %d %b %Y %H:%M:%S %Z').strftime('%Y-%m-%d %H:%M:%S')
-        except ValueError:
-            article['published_date'] = entry.published
+    try:
+        feed = feedparser.parse(rss_url)
         
-        articles.append(article)
+        # bozo 플래그 확인
+        if feed.get('bozo', 0) == 1:
+            error_msg = feed.get('bozo_exception', '알 수 없는 파싱 오류')
+            st.warning(f"RSS 파싱 오류: {error_msg}")
+            return []
+        
+        articles = []
+        for entry in feed.entries[:max_articles]:
+            article = {
+                'title': entry.get('title', ''),
+                'link': entry.get('link', ''),
+                'published': entry.get('published', ''),
+                'summary': entry.get('summary', ''),
+                'source': entry.get('source', {}).get('title', '') if 'source' in entry else '',
+                'media_url': entry.get('media_content', [{}])[0].get('url', '') if 'media_content' in entry else ''
+            }
+            try:
+                article['published_date'] = datetime.datetime.strptime(entry.published, '%a, %d %b %Y %H:%M:%S %Z').strftime('%Y-%m-%d %H:%M:%S')
+            except (ValueError, AttributeError):
+                article['published_date'] = entry.get('published', '날짜 정보 없음')
+            
+            articles.append(article)
+        
+        return articles
     
-    return articles
+    except Exception as e:
+        st.error(f"크롤링 중 오류 발생: {str(e)}")
+        return []
 
 # Streamlit 앱 메인 함수
 def main():
@@ -132,5 +139,5 @@ if __name__ == "__main__":
 #
 # 주의:
 # - Google News RSS는 실시간 데이터로, 결과는 실행 시점에 따라 다를 수 있습니다.
-# - Streamlit 앱은 로컬 환경 또는 배포된 서버에서 실행 가능.
+# - Streamlit Cloud에서 실행 중이라면, requirements.txt에 feedparser==6.0.10 등을 명시하세요.
 # - 추가 필터링(예: 날짜 범위)은 RSS URL에 &as_qdr=d7 (최근 7일) 등을 추가하여 구현 가능.

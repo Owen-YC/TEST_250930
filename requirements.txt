@@ -1,4 +1,20 @@
+streamlit
 feedparser
 requests
 beautifulsoup4
+requests
+beautifulsoup4
+plotly
+pandas
+numpy
+pytz
 lxml
+folium
+streamlit-folium
+selenium
+newspaper3k
+google-genai
+# FlightAware App Dependencies
+geopy
+timezonefinder
+deepl
